@@ -11,7 +11,7 @@ pip install -U discord.py python-dotenv
 ```
 
 # Setup
-in order for this bot to run you need to create a .env file in the same directory as the .py file  
+in order for this bot to run you need to create a file called `.env` in the same directory as the .py file  
 its contents will be formatted like this (replace the CAPS text):
 ```env
 TOKEN="BOT TOKEN HERE"
