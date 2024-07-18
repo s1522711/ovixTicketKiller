@@ -24,6 +24,17 @@ kill_gta_tickets = False
 kill_rdr_tickets = False
 kill_cs2_tickets = False
 
+try:
+    with open("last_state.txt", "r") as f:
+        kill_gta_tickets = f.readline().strip() == "True"
+        kill_rdr_tickets = f.readline().strip() == "True"
+        kill_cs2_tickets = f.readline().strip() == "True"
+except FileNotFoundError:
+    with open("last_state.txt", "w") as f:
+        f.write("False\nFalse\nFalse")
+
+print(kill_gta_tickets, kill_rdr_tickets, kill_cs2_tickets)
+
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
@@ -33,19 +44,14 @@ async def on_message(message):
     global kill_cs2_tickets
 
     if message.author.id == ticket_bot_id and kill_gta_tickets and '//' in message.content:
-        if message.content.split('//')[1].split('//')[0].lower() == 'gta':
+        if 'gta' in message.content.split('//')[1].split('//')[0].lower():
             print("found gta ticket")
             await message.channel.send('Hello! the gta category has been disabled!')
             await message.channel.send('this ticket will be closed in 5 seconds')
             await asyncio.sleep(1)
-            await message.channel.send('4')
-            await asyncio.sleep(1)
-            await message.channel.send('3')
-            await asyncio.sleep(1)
-            await message.channel.send('2')
-            await asyncio.sleep(1)
-            await message.channel.send('1')
-            await asyncio.sleep(1)
+            for i in range(4):
+                await message.channel.send(str(4-i))
+                await asyncio.sleep(1)
             await message.channel.send('0 - goodbye!')
             await asyncio.sleep(1)
             await message.channel.send('$close BOT: GTA CATEGORY DISABLED')
@@ -54,19 +60,14 @@ async def on_message(message):
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
     if message.author.id == ticket_bot_id and kill_rdr_tickets and '//' in message.content:
-        if message.content.split('//')[1].split('//')[0].lower() == 'rdr' or message.content.split('//')[1].split('//')[0].lower() == 'rdr2':
+        if 'rdr' in message.content.split('//')[1].split('//')[0].lower():
             print("found rdr ticket")
             await message.channel.send('Hello! the rdr category has been disabled!')
             await message.channel.send('this ticket will be closed in 5 seconds')
             await asyncio.sleep(1)
-            await message.channel.send('4')
-            await asyncio.sleep(1)
-            await message.channel.send('3')
-            await asyncio.sleep(1)
-            await message.channel.send('2')
-            await asyncio.sleep(1)
-            await message.channel.send('1')
-            await asyncio.sleep(1)
+            for i in range(4):
+                await message.channel.send(str(4-i))
+                await asyncio.sleep(1)
             await message.channel.send('0 - goodbye!')
             await asyncio.sleep(1)
             await message.channel.send('$close BOT: RDR CATEGORY DISABLED')
@@ -75,19 +76,14 @@ async def on_message(message):
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
     if message.author.id == ticket_bot_id and kill_cs2_tickets and '//' in message.content:
-        if message.content.split('//')[1].split('//')[0].lower() == 'cs2':
+        if 'cs' in message.content.split('//')[1].split('//')[0].lower():
             print("found cs2 ticket")
             await message.channel.send('Hello! the cs2 category has been disabled!')
             await message.channel.send('this ticket will be closed in 5 seconds')
             await asyncio.sleep(1)
-            await message.channel.send('4')
-            await asyncio.sleep(1)
-            await message.channel.send('3')
-            await asyncio.sleep(1)
-            await message.channel.send('2')
-            await asyncio.sleep(1)
-            await message.channel.send('1')
-            await asyncio.sleep(1)
+            for i in range(4):
+                await message.channel.send(str(4-i))
+                await asyncio.sleep(1)
             await message.channel.send('0 - goodbye!')
             await asyncio.sleep(1)
             await message.channel.send('$close BOT: CS2 CATEGORY DISABLED')
@@ -102,6 +98,8 @@ async def slash_command(interaction: discord.Interaction):
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
         global kill_gta_tickets
         kill_gta_tickets = not kill_gta_tickets
+        update_status()
+        print("Updated gta killing - " + str(kill_gta_tickets))
         await interaction.response.send_message("Updated gta killing - " + str(kill_gta_tickets))
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
@@ -112,6 +110,8 @@ async def slash_command(interaction: discord.Interaction):
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
         global kill_rdr_tickets
         kill_rdr_tickets = not kill_rdr_tickets
+        update_status()
+        print("Updated rdr killing - " + str(kill_rdr_tickets))
         await interaction.response.send_message("Updated rdr killing - " + str(kill_rdr_tickets))
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
@@ -122,16 +122,20 @@ async def slash_command(interaction: discord.Interaction):
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
         global kill_cs2_tickets
         kill_cs2_tickets = not kill_cs2_tickets
+        update_status()
+        print("Updated cs2 killing - " + str(kill_cs2_tickets))
         await interaction.response.send_message("Updated cs2 killing - " + str(kill_cs2_tickets))
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
 @bot.tree.command(name="killing-status",description="get the status of the ticket killing")
 async def slash_command(interaction: discord.Interaction):
-    role1 = discord.utils.get(interaction.guild.roles, id=moderator_role_id)
-    role2 = discord.utils.get(interaction.guild.roles, id=staff_role_id)
-    if role1 in interaction.user.roles or role2 in interaction.user.roles or interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("GTA: " + str(kill_gta_tickets) + "\nRDR: " + str(kill_rdr_tickets) + "\nCS2: " + str(kill_cs2_tickets))
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(":green_circle: = killing enabled, :red_circle: = killing disabled"
+                                                "\nGTA: " + (":green_circle:" if kill_gta_tickets else ":red_circle:") +
+                                                "\nRDR: " + (":green_circle:" if kill_rdr_tickets else ":red_circle:") +
+                                                "\nCS2: " + (":green_circle:" if kill_cs2_tickets else ":red_circle:"))
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
@@ -139,6 +143,14 @@ async def slash_command(interaction: discord.Interaction):
 async def on_ready():
     await bot.tree.sync()
     print(f'We have logged in as {bot.user}')
+
+
+def update_status():
+    global kill_gta_tickets
+    global kill_rdr_tickets
+    global kill_cs2_tickets
+    with open("last_state.txt", "w") as f:
+        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets))
 
 
 bot.run(DISCORD_TOKEN)
