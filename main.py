@@ -19,6 +19,8 @@ moderator_role_id = int(os.getenv("MODERATOR_ROLE_ID"))
 print("moderator role id: " + str(moderator_role_id))
 staff_role_id = int(os.getenv("STAFF_ROLE_ID"))
 print("staff role id: " + str(staff_role_id))
+trial_staff_role_id = int(os.getenv("TRIAL_STAFF_ROLE_ID"))
+print("trial staff role id: " + str(trial_staff_role_id))
 
 kill_gta_tickets = False
 kill_rdr_tickets = False
@@ -59,6 +61,7 @@ async def on_message(message):
             await message.channel.send('$transcript')
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
+            return
     if message.author.id == ticket_bot_id and kill_rdr_tickets and '//' in message.content:
         if 'rdr' in message.content.split('//')[1].split('//')[0].lower():
             print("found rdr ticket")
@@ -75,6 +78,7 @@ async def on_message(message):
             await message.channel.send('$transcript')
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
+            return
     if message.author.id == ticket_bot_id and kill_cs2_tickets and '//' in message.content:
         if 'cs' in message.content.split('//')[1].split('//')[0].lower():
             print("found cs2 ticket")
@@ -91,6 +95,9 @@ async def on_message(message):
             await message.channel.send('$transcript')
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
+            return
+    await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
+                               '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
 
 @bot.tree.command(name="toggle-gta-killing",description="toggle whether to kill gta tickets")
 async def slash_command(interaction: discord.Interaction):
