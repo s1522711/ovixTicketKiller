@@ -96,8 +96,9 @@ async def on_message(message):
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
             return
-    await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
-                               '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
+    if message.author.id == ticket_bot_id and '//' in message.content:
+        await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
+                                   '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
 
 @bot.tree.command(name="toggle-gta-killing",description="toggle whether to kill gta tickets")
 async def slash_command(interaction: discord.Interaction):
