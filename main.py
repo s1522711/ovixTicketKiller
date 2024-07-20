@@ -96,6 +96,24 @@ async def on_message(message):
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
             return
+    message.content.split('//')
+    if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' in message.content.split('//')[1].lower():
+        if 'ye' not in message.content.split('//')[2].lower():
+            print("found invalid unverified password reset ticket")
+            await message.channel.send('Hello! these tickets are only for requesting a password reset for your account!')
+            await message.channel.send('this ticket will be closed in 5 seconds')
+            await asyncio.sleep(1)
+            for i in range(4):
+                await message.channel.send(str(4-i))
+                await asyncio.sleep(1)
+            await message.channel.send('0 - goodbye!')
+            await asyncio.sleep(1)
+            await message.channel.send('$close BOT: UNVERIFIED PASSWORD RESET IDIOT')
+            await asyncio.sleep(0.5)
+            await message.channel.send('$transcript')
+            await asyncio.sleep(0.5)
+            await message.channel.send('$delete')
+            return
     if message.author.id == ticket_bot_id and '//' in message.content:
         await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
                                    '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
