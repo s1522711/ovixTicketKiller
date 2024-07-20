@@ -1,5 +1,5 @@
 # Ovix ticket killer
-small and shitty discord.py bot made for ovix to auto delete tickets if they are created for a disabled game
+small and shitty discord.py bot made for ovix to auto delete tickets if they are created for a disabled game or delete password reset tickets that were not created for password resets
 
 # Dependencies
 this bot depends on:
