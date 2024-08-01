@@ -21,6 +21,10 @@ staff_role_id = int(os.getenv("STAFF_ROLE_ID"))
 print("staff role id: " + str(staff_role_id))
 trial_staff_role_id = int(os.getenv("TRIAL_STAFF_ROLE_ID"))
 print("trial staff role id: " + str(trial_staff_role_id))
+minecraft_applications_channel_id = int(os.getenv("MINECRAFT_APPLICATIONS_CHANNEL_ID"))
+print("minecraft applications channel id: " + str(minecraft_applications_channel_id))
+minecraft_role_id = int(os.getenv("MINECRAFT_ROLE_ID"))
+print("minecraft role id: " + str(minecraft_role_id))
 
 kill_gta_tickets = False
 kill_rdr_tickets = False
@@ -164,6 +168,92 @@ async def slash_command(interaction: discord.Interaction):
                                                 "\nCS2: " + (":green_circle:" if kill_cs2_tickets else ":red_circle:"))
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
+
+class ApplicationView(discord.ui.View):
+    def __init__(self, user, embed):
+        super().__init__(timeout=None)
+        self.user = user
+        self.embed = embed
+
+    @discord.ui.button(label="Accept", style=discord.ButtonStyle.success)
+    async def accept_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.embed.color = discord.Color.green()
+        self.embed.title = "Minecraft Application - Accepted"
+        await interaction.response.edit_message(embed=self.embed)
+        embed_description = self.embed.description
+        user_id = embed_description.split("  created an application")[0]
+        user_id = user_id.split("@")[1]
+        user_id = user_id.split(">")[0]
+        # Get the guild member
+        guild = interaction.guild
+        member = guild.get_member(int(user_id))
+
+        if member is None:
+            member = await guild.fetch_member(int(user_id))
+
+        # Send the DM to the user
+        embedVar = discord.Embed(
+            title="Minecraft Application",
+            description=f"Your application has been accepted {member.mention}!",
+            color=discord.Color.green()
+        )
+        embedVar.add_field(name="The Minecraft username that was whitelisted: ", value=self.embed.fields[0].value,
+                           inline=False)
+        embedVar.add_field(name="You can now join the server at: ", value="`mc.retardhub.xyz`", inline=False)
+        embedVar.add_field(name="Minecraft Version: ", value="`1.21`", inline=False)
+        await member.send(embed=embedVar)
+
+        # Add the role to the member
+        role = guild.get_role(minecraft_role_id)
+        if role is not None:
+            await member.add_roles(role)
+        else:
+            print(f"Role with ID {minecraft_role_id} not found")
+
+    @discord.ui.button(label="Deny", style=discord.ButtonStyle.danger)
+    async def deny_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.embed.color = discord.Color.red()
+        self.embed.title = "Minecraft Application - Denied"
+        await interaction.response.edit_message(embed=self.embed)
+
+        # Extract the user ID from the embed description
+        embed_description = self.embed.description
+        user_id = embed_description.split("  created an application")[0]
+        user_id = user_id.split("@")[1]
+        user_id = user_id.split(">")[0]
+
+        # Get the guild member
+        guild = interaction.guild
+        member = guild.get_member(int(user_id))
+
+        if member is None:
+            member = await guild.fetch_member(int(user_id))
+
+        # Send the denial DM to the member
+        try:
+            await member.send(f"We are sorry to announce that your application has been denied, {member.mention}!")
+            await member.send("If you have any questions, feel free to ask in the server.")
+        except discord.Forbidden:
+            print(f"Could not send DM to {member} (ID: {member.id}).")
+
+        role = guild.get_role(minecraft_role_id)
+        if role:
+            await member.remove_roles(role)
+
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print(f'Logged in as {bot.user}!')
+
+@bot.tree.command(name="mc-apply", description="Apply for access to the Minecraft server")
+async def slash_command(interaction: discord.Interaction, username: str):
+    channel = bot.get_channel(minecraft_applications_channel_id)
+    embedVar = discord.Embed(title="Minecraft Application - Pending", description=f"{interaction.user.mention} created an application", color=0x000000)
+    embedVar.add_field(name="Minecraft Username: ", value=f"`{username}`", inline=False)
+    view = ApplicationView(interaction.user, embedVar)
+    await channel.send(embed=embedVar, view=view)
+    await interaction.response.send_message("Your application has been submitted. You will be notified if you are accepted or denied.\nMake sure to check if you have DMs enabled from server members.", ephemeral=True)
 
 @bot.event
 async def on_ready():
