@@ -257,7 +257,7 @@ class ApplicationView(discord.ui.View):
 
         # Send the denial DM to the member
         try:
-            await member.send(f"We are sorry to announce that your application has been denied, {member.mention}!")
+            await member.send(f"We are sorry to announce that your application has been denied {member.mention}!")
             await member.send("If you have any questions, feel free to ask in the server.")
         except discord.Forbidden:
             print(f"Could not send DM to {member} (ID: {member.id}).")
