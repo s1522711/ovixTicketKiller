@@ -3,6 +3,7 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 import asyncio
+import requests
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("TOKEN")
@@ -25,6 +26,15 @@ minecraft_applications_channel_id = int(os.getenv("MINECRAFT_APPLICATIONS_CHANNE
 print("minecraft applications channel id: " + str(minecraft_applications_channel_id))
 minecraft_role_id = int(os.getenv("MINECRAFT_ROLE_ID"))
 print("minecraft role id: " + str(minecraft_role_id))
+crafty_base_url = os.getenv("CRAFTY_BASE_URL")
+print("crafty base url: " + crafty_base_url)
+crafty_api_username = os.getenv("CRAFTY_API_USERNAME")
+print("crafty api username: " + crafty_api_username)
+crafty_api_password = os.getenv("CRAFTY_API_PASSWORD")
+print("crafty api password: " + crafty_api_password)
+crafty_server_id = os.getenv("CRAFTY_SERVER_ID")
+print("crafty server id: " + crafty_server_id)
+
 
 kill_gta_tickets = False
 kill_rdr_tickets = False
@@ -211,6 +221,21 @@ class ApplicationView(discord.ui.View):
         else:
             print(f"Role with ID {minecraft_role_id} not found")
 
+        # Add the user to the whitelist
+        url = crafty_base_url + "/api/v2/"
+        data = { "username": crafty_api_username, "password": crafty_api_password }
+        response = requests.post(url + "auth/login", json=data)
+        if response.status_code == 200:
+            token = response.json()["data"]["token"]
+            headers = { "Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8' }
+            data = "comfywl add " + self.embed.fields[0].value.split("`")[1]
+            response = requests.post(f"{url}servers/{crafty_server_id}/stdin", data=data, headers=headers)
+            #response = requests.get(url + "servers", headers=headers)
+            if response.status_code == 200:
+                print(f"Added {self.embed.fields[0].value} to the whitelist")
+            else:
+                print(f"Failed to add {self.embed.fields[0].value} to the whitelist")
+
     @discord.ui.button(label="Deny", style=discord.ButtonStyle.danger)
     async def deny_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.embed.color = discord.Color.red()
@@ -240,6 +265,20 @@ class ApplicationView(discord.ui.View):
         role = guild.get_role(minecraft_role_id)
         if role:
             await member.remove_roles(role)
+
+        # Add the user to the whitelist
+        url = crafty_base_url + "/api/v2/"
+        data = { "username": crafty_api_username, "password": crafty_api_password }
+        response = requests.post(url + "auth/login", json=data)
+        if response.status_code == 200:
+            token = response.json()["data"]["token"]
+            headers = { "Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8' }
+            data = "comfywl remove " + self.embed.fields[0].value.split("`")[1]
+            response = requests.post(f"{url}servers/{crafty_server_id}/stdin", data=data, headers=headers)
+            if response.status_code == 200:
+                print(f"Removed {self.embed.fields[0].value} from the whitelist")
+            else:
+                print(f"Failed to remove {self.embed.fields[0].value} from the whitelist")
 
 @bot.event
 async def on_ready():
