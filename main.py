@@ -336,6 +336,69 @@ async def slash_command(interaction: discord.Interaction, username: str):
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
+@bot.tree.command(name="restart-server", description="Restart the Minecraft server (staff only)")
+async def slash_command(interaction: discord.Interaction):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        # Add the user to the whitelist
+        data = {"username": crafty_api_username, "password": crafty_api_password}
+        response = requests.post(crafty_base_url + "auth/login", json=data)
+        if response.status_code == 200:
+            token = response.json()["data"]["token"]
+            headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+            data = "restart"
+            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/action/restart_server", data=data, headers=headers)
+            if response.status_code == 200:
+                print("Restarted the server")
+                await interaction.response.send_message("Restarted the server")
+            else:
+                print("Failed to restart the server")
+                await interaction.response.send_message("Failed to restart the server")
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
+@bot.tree.command(name="stop-server", description="Stop the Minecraft server (staff only)")
+async def slash_command(interaction: discord.Interaction):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        # Add the user to the whitelist
+        data = {"username": crafty_api_username, "password": crafty_api_password}
+        response = requests.post(crafty_base_url + "auth/login", json=data)
+        if response.status_code == 200:
+            token = response.json()["data"]["token"]
+            headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+            data = "restart"
+            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/action/stop_server", data=data, headers=headers)
+            if response.status_code == 200:
+                print("Stopped the server")
+                await interaction.response.send_message("Stopped the server")
+            else:
+                print("Failed to stop the server")
+                await interaction.response.send_message("Failed to stop the server")
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
+@bot.tree.command(name="start-server", description="start the Minecraft server (staff only)")
+async def slash_command(interaction: discord.Interaction):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        # Add the user to the whitelist
+        data = {"username": crafty_api_username, "password": crafty_api_password}
+        response = requests.post(crafty_base_url + "auth/login", json=data)
+        if response.status_code == 200:
+            token = response.json()["data"]["token"]
+            headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+            data = "restart"
+            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/action/start_server", data=data, headers=headers)
+            if response.status_code == 200:
+                print("Started the server")
+                await interaction.response.send_message("Started the server")
+            else:
+                print("Failed to start the server")
+                await interaction.response.send_message("Failed to start the server")
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
