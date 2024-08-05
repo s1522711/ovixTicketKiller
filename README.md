@@ -1,5 +1,6 @@
 # Ovix ticket killer
-small and shitty discord.py bot made for ovix to auto delete tickets if they are created for a disabled game or delete password reset tickets that were not created for password resets
+small and shitty discord.py bot made for ovix to auto delete tickets if they are created for a disabled game or delete password reset tickets that were not created for password resets  
+also because i didnt want to create another bot for the minecraft server this bot also has minecraft server related commands (applications with crafty and comfywhitelist integration, granting staff role using crafty and luckperms and restarting, stopping and starting the server using crafty)
 
 # Dependencies
 this bot depends on:
