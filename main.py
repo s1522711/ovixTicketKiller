@@ -36,6 +36,10 @@ crafty_server_id = os.getenv("CRAFTY_SERVER_ID")
 print("crafty server id: " + crafty_server_id)
 minecraft_server_ip = os.getenv("MINECRAFT_SERVER_IP")
 print("minecraft server ip: " + minecraft_server_ip)
+unverified_role_id = int(os.getenv("UNVERIFIED_ROLE_ID"))
+print("unverified role id: " + str(unverified_role_id))
+verification_channel_id = int(os.getenv("VERIFICATION_CHANNEL_ID"))
+print("verification channel id: " + str(verification_channel_id))
 
 
 kill_gta_tickets = False
@@ -287,6 +291,11 @@ async def on_ready():
 
 @bot.tree.command(name="mc-apply", description="Apply for access to the Minecraft server")
 async def slash_command(interaction: discord.Interaction, username: str):
+    role = discord.utils.get(interaction.guild.roles, id=unverified_role_id)
+    if role in interaction.user.roles:
+        await interaction.response.send_message("You must verify your account to apply for the Minecraft server. Please check your DMs for instructions on how to verify your account.", ephemeral=True)
+        await interaction.user.send(f"To verify your account, please type `/verify` in the <#{verification_channel_id}> channel.")
+        return
     channel = bot.get_channel(minecraft_applications_channel_id)
     embedVar = discord.Embed(title="Minecraft Application - Pending", description=f"{interaction.user.mention} created an application", color=0x000000)
     embedVar.add_field(name="Minecraft Username: ", value=f"`{username}`", inline=False)
