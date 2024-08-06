@@ -293,8 +293,7 @@ async def on_ready():
 async def slash_command(interaction: discord.Interaction, username: str):
     role = discord.utils.get(interaction.guild.roles, id=unverified_role_id)
     if role in interaction.user.roles:
-        await interaction.response.send_message("You must verify your account to apply for the Minecraft server. Please check your DMs for instructions on how to verify your account.", ephemeral=True)
-        await interaction.user.send(f"To verify your account, please type `/verify` in the <#{verification_channel_id}> channel.")
+        await interaction.response.send_message(f"You must verify your account to apply for the Minecraft server. Please check your DMs for instructions on how to verify your account.\nTo verify your account, please type `/verify` in the <#{verification_channel_id}> channel.", ephemeral=True)
         return
     channel = bot.get_channel(minecraft_applications_channel_id)
     embedVar = discord.Embed(title="Minecraft Application - Pending", description=f"{interaction.user.mention} created an application", color=0x000000)
