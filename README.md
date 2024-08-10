@@ -7,10 +7,10 @@ also because i didnt want to create another bot for the minecraft server this bo
 this bot depends on:
 - discord.py
 - python-dotenv  
-- requests
+- aiohttp
 before you can start the bot you will need to install its dependencies using the command bellow:  
 ```
-pip install -U discord.py python-dotenv requests
+pip install -U discord.py python-dotenv aiohttp
 ```
 
 # Setup

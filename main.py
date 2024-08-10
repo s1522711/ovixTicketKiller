@@ -3,7 +3,7 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 import asyncio
-import requests
+import aiohttp
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("TOKEN")
@@ -228,18 +228,18 @@ class ApplicationView(discord.ui.View):
             print(f"Role with ID {minecraft_role_id} not found")
 
         # Add the user to the whitelist
-        data = { "username": crafty_api_username, "password": crafty_api_password }
-        response = requests.post(crafty_base_url + "auth/login", json=data)
-        if response.status_code == 200:
-            token = response.json()["data"]["token"]
-            headers = { "Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8' }
-            data = "comfywl add " + self.embed.fields[0].value.split("`")[1]
-            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers)
-            #response = requests.get(url + "servers", headers=headers)
-            if response.status_code == 200:
-                print(f"Added {self.embed.fields[0].value} to the whitelist")
-            else:
-                print(f"Failed to add {self.embed.fields[0].value} to the whitelist")
+        async with aiohttp.ClientSession() as session:
+            data = {"username": crafty_api_username, "password": crafty_api_password}
+            async with session.post(crafty_base_url + "auth/login", json=data) as response:
+                if response.status == 200:
+                    token = (await response.json())["data"]["token"]
+                    headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+                    data = "comfywl add " + self.embed.fields[0].value.split("`")[1]
+                    async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers) as response:
+                        if response.status == 200:
+                            print(f"Added {self.embed.fields[0].value} to the whitelist")
+                        else:
+                            print(f"Failed to add {self.embed.fields[0].value} to the whitelist")
 
     @discord.ui.button(label="Deny", style=discord.ButtonStyle.danger)
     async def deny_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -271,18 +271,19 @@ class ApplicationView(discord.ui.View):
         if role:
             await member.remove_roles(role)
 
-        # Add the user to the whitelist
-        data = { "username": crafty_api_username, "password": crafty_api_password }
-        response = requests.post(crafty_base_url + "auth/login", json=data)
-        if response.status_code == 200:
-            token = response.json()["data"]["token"]
-            headers = { "Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8' }
-            data = "comfywl remove " + self.embed.fields[0].value.split("`")[1]
-            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers)
-            if response.status_code == 200:
-                print(f"Removed {self.embed.fields[0].value} from the whitelist")
-            else:
-                print(f"Failed to remove {self.embed.fields[0].value} from the whitelist")
+        # Remove the user from the whitelist
+        async with aiohttp.ClientSession() as session:
+            data = {"username": crafty_api_username, "password": crafty_api_password}
+            async with session.post(crafty_base_url + "auth/login", json=data) as response:
+                if response.status == 200:
+                    token = (await response.json())["data"]["token"]
+                    headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+                    data = "comfywl remove " + self.embed.fields[0].value.split("`")[1]
+                    async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers) as response:
+                        if response.status == 200:
+                            print(f"Removed {self.embed.fields[0].value} from the whitelist")
+                        else:
+                            print(f"Failed to remove {self.embed.fields[0].value} from the whitelist")
 
 @bot.event
 async def on_ready():
@@ -306,20 +307,26 @@ async def slash_command(interaction: discord.Interaction, username: str):
 async def slash_command(interaction: discord.Interaction, username: str):
     role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
-        # Add the user to the whitelist
-        data = {"username": crafty_api_username, "password": crafty_api_password}
-        response = requests.post(crafty_base_url + "auth/login", json=data)
-        if response.status_code == 200:
-            token = response.json()["data"]["token"]
-            headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
-            data = f"lp user {username} parent add admin"
-            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers)
-            if response.status_code == 200:
-                print(f"Awarded staff rank to {username}")
-                await interaction.response.send_message(f"Awarded staff rank to {username}")
-            else:
-                print(f"Failed to award staff rank to {username}")
-                await interaction.response.send_message(f"Failed to award staff rank to {username}")
+        async with aiohttp.ClientSession() as session:
+            data = {"username": crafty_api_username, "password": crafty_api_password}
+            async with session.post(crafty_base_url + "auth/login", json=data) as response:
+                if response.status == 200:
+                    token = (await response.json())["data"]["token"]
+                    headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+                    data = f"lp user {username} parent add admin"
+                    async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers) as response:
+                        if response.status == 200:
+                            data = f"op {username}"
+                            async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers) as response:
+                                if response.status == 200:
+                                    print(f"Awarded staff rank to {username}")
+                                    await interaction.response.send_message(f"Awarded staff rank to {username}")
+                                else:
+                                    print(f"Failed to award staff rank to {username}")
+                                    await interaction.response.send_message(f"Failed to award staff rank to {username}")
+                        else:
+                            print(f"Failed to award staff rank to {username}")
+                            await interaction.response.send_message(f"Failed to award staff rank to {username}")
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
@@ -327,20 +334,26 @@ async def slash_command(interaction: discord.Interaction, username: str):
 async def slash_command(interaction: discord.Interaction, username: str):
     role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
-        # Add the user to the whitelist
-        data = {"username": crafty_api_username, "password": crafty_api_password}
-        response = requests.post(crafty_base_url + "auth/login", json=data)
-        if response.status_code == 200:
-            token = response.json()["data"]["token"]
-            headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
-            data = f"lp user {username} parent remove admin"
-            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers)
-            if response.status_code == 200:
-                print(f"Removed staff rank from {username}")
-                await interaction.response.send_message(f"Removed staff rank from {username}")
-            else:
-                print(f"Failed to remove staff rank from {username}")
-                await interaction.response.send_message(f"Failed to remove staff rank from {username}")
+        async with aiohttp.ClientSession() as session:
+            data = {"username": crafty_api_username, "password": crafty_api_password}
+            async with session.post(crafty_base_url + "auth/login", json=data) as response:
+                if response.status == 200:
+                    token = (await response.json())["data"]["token"]
+                    headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+                    data = f"lp user {username} parent remove admin"
+                    async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers) as response:
+                        if response.status == 200:
+                            data = f"deop {username}"
+                            async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/stdin", data=data, headers=headers) as response:
+                                if response.status == 200:
+                                    print(f"Removed staff rank from {username}")
+                                    await interaction.response.send_message(f"Removed staff rank from {username}")
+                                else:
+                                    print(f"Failed to remove staff rank from {username}")
+                                    await interaction.response.send_message(f"Failed to remove staff rank from {username}")
+                        else:
+                            print(f"Failed to remove staff rank from {username}")
+                            await interaction.response.send_message(f"Failed to remove staff rank from {username}")
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
@@ -348,20 +361,20 @@ async def slash_command(interaction: discord.Interaction, username: str):
 async def slash_command(interaction: discord.Interaction):
     role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
-        # Add the user to the whitelist
-        data = {"username": crafty_api_username, "password": crafty_api_password}
-        response = requests.post(crafty_base_url + "auth/login", json=data)
-        if response.status_code == 200:
-            token = response.json()["data"]["token"]
-            headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
-            data = "restart"
-            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/action/restart_server", data=data, headers=headers)
-            if response.status_code == 200:
-                print("Restarted the server")
-                await interaction.response.send_message("Restarted the server")
-            else:
-                print("Failed to restart the server")
-                await interaction.response.send_message("Failed to restart the server")
+        async with aiohttp.ClientSession() as session:
+            data = {"username": crafty_api_username, "password": crafty_api_password}
+            async with session.post(crafty_base_url + "auth/login", json=data) as response:
+                if response.status == 200:
+                    token = (await response.json())["data"]["token"]
+                    headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+                    data = "restart"
+                    async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/action/restart_server", data=data, headers=headers) as response:
+                        if response.status == 200:
+                            print("Restarted the server")
+                            await interaction.response.send_message("Restarted the server")
+                        else:
+                            print("Failed to restart the server")
+                            await interaction.response.send_message("Failed to restart the server")
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
@@ -369,20 +382,20 @@ async def slash_command(interaction: discord.Interaction):
 async def slash_command(interaction: discord.Interaction):
     role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
-        # Add the user to the whitelist
-        data = {"username": crafty_api_username, "password": crafty_api_password}
-        response = requests.post(crafty_base_url + "auth/login", json=data)
-        if response.status_code == 200:
-            token = response.json()["data"]["token"]
-            headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
-            data = "restart"
-            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/action/stop_server", data=data, headers=headers)
-            if response.status_code == 200:
-                print("Stopped the server")
-                await interaction.response.send_message("Stopped the server")
-            else:
-                print("Failed to stop the server")
-                await interaction.response.send_message("Failed to stop the server")
+        async with aiohttp.ClientSession() as session:
+            data = {"username": crafty_api_username, "password": crafty_api_password}
+            async with session.post(crafty_base_url + "auth/login", json=data) as response:
+                if response.status == 200:
+                    token = (await response.json())["data"]["token"]
+                    headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+                    data = "restart"
+                    async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/action/stop_server", data=data, headers=headers) as response:
+                        if response.status == 200:
+                            print("Stopped the server")
+                            await interaction.response.send_message("Stopped the server")
+                        else:
+                            print("Failed to stop the server")
+                            await interaction.response.send_message("Failed to stop the server")
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
@@ -390,20 +403,20 @@ async def slash_command(interaction: discord.Interaction):
 async def slash_command(interaction: discord.Interaction):
     role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
-        # Add the user to the whitelist
-        data = {"username": crafty_api_username, "password": crafty_api_password}
-        response = requests.post(crafty_base_url + "auth/login", json=data)
-        if response.status_code == 200:
-            token = response.json()["data"]["token"]
-            headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
-            data = "restart"
-            response = requests.post(f"{crafty_base_url}servers/{crafty_server_id}/action/start_server", data=data, headers=headers)
-            if response.status_code == 200:
-                print("Started the server")
-                await interaction.response.send_message("Started the server")
-            else:
-                print("Failed to start the server")
-                await interaction.response.send_message("Failed to start the server")
+        async with aiohttp.ClientSession() as session:
+            data = {"username": crafty_api_username, "password": crafty_api_password}
+            async with session.post(crafty_base_url + "auth/login", json=data) as response:
+                if response.status == 200:
+                    token = (await response.json())["data"]["token"]
+                    headers = {"Authorization": f"Bearer {token}", 'Content-Type': 'text/plain; charset=utf-8'}
+                    data = "restart"
+                    async with session.post(f"{crafty_base_url}servers/{crafty_server_id}/action/start_server", data=data, headers=headers) as response:
+                        if response.status == 200:
+                            print("Started the server")
+                            await interaction.response.send_message("Started the server")
+                        else:
+                            print("Failed to start the server")
+                            await interaction.response.send_message("Failed to start the server")
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
