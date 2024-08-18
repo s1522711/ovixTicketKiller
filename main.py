@@ -134,8 +134,21 @@ async def on_message(message):
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
             return
-    if message.author.id == ticket_bot_id and '//' in message.content:
+    if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' not in message.content.split('//')[1].lower():
+        # the opening reason is in the embed field called "Why are you creating this ticket?"
+        opening_reason = message.embeds[1].description.split('\n')[1].replace('`', '')
+        read_status = message.embeds[1].description.split('\n')[7].replace('`', '')
+        ticket_game = message.content.split('//')[1]
+        print(f"ticket opened with the reason: {opening_reason} and read status: {read_status} for the game: {ticket_game}")
         await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
+                                   f'\nGame: {ticket_game}, read? {read_status}, reason: {opening_reason}'
+                                   '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
+        
+    if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' in message.content.split('//')[1].lower():
+        opening_reason = message.embeds[1].description.split('\n')[1].replace('`', '')
+        print(f"unverified ticket opened with the reason: {opening_reason}")
+        await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
+                                   f'\nType: unverified, reason: {opening_reason}'
                                    '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
 
 @bot.tree.command(name="toggle-gta-killing",description="toggle whether to kill gta tickets")
