@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 import os
 from dotenv import load_dotenv
@@ -304,6 +305,8 @@ async def on_ready():
     print(f'Logged in as {bot.user}!')
 
 @bot.tree.command(name="mc-apply", description="Apply for access to the Minecraft server")
+@app_commands.describe(username="Minecraft username")
+@app_commands.rename(username="minecraft-username")
 async def slash_command(interaction: discord.Interaction, username: str):
     role = discord.utils.get(interaction.guild.roles, id=unverified_role_id)
     if role in interaction.user.roles:
@@ -315,8 +318,25 @@ async def slash_command(interaction: discord.Interaction, username: str):
     view = ApplicationView(interaction.user, embedVar)
     await channel.send(embed=embedVar, view=view)
     await interaction.response.send_message("Your application has been submitted. You will be notified if you are accepted or denied.\nMake sure to check if you have DMs enabled from server members.", ephemeral=True)
+    
+@bot.tree.command(name="mc-apply-other", description="Create an application for a different user (admin only)")
+@app_commands.describe(username="Select a user", minecraft_username="Minecraft username")
+@app_commands.rename(username="user", minecraft_username="minecraft-username")
+async def slash_command(interaction: discord.Interaction, username: discord.User, minecraft_username: str):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        channel = bot.get_channel(minecraft_applications_channel_id)
+        embedVar = discord.Embed(title="Minecraft Application - Pending", description=f"{username.mention} created an application", color=0x000000)
+        embedVar.add_field(name="Minecraft Username: ", value=f"`{minecraft_username}`", inline=False)
+        view = ApplicationView(interaction.user, embedVar)
+        await channel.send(embed=embedVar, view=view)
+        await interaction.response.send_message(f"Application for {username.mention} has been submitted. They will be notified if they are accepted or denied.", ephemeral=True)
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
 @bot.tree.command(name="get-staff", description="Get staff rank in server (staff only)")
+@app_commands.describe(username="Minecraft username")
+@app_commands.rename(username="minecraft-username")
 async def slash_command(interaction: discord.Interaction, username: str):
     role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
@@ -344,6 +364,8 @@ async def slash_command(interaction: discord.Interaction, username: str):
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
 @bot.tree.command(name="remove-staff", description="Remove staff rank in server (staff only)")
+@app_commands.describe(username="Minecraft username")
+@app_commands.rename(username="minecraft-username")
 async def slash_command(interaction: discord.Interaction, username: str):
     role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
