@@ -46,17 +46,19 @@ print("verification channel id: " + str(verification_channel_id))
 kill_gta_tickets = False
 kill_rdr_tickets = False
 kill_cs2_tickets = False
+kill_unverified_tickets = False
 
 try:
     with open("last_state.txt", "r") as f:
         kill_gta_tickets = f.readline().strip() == "True"
         kill_rdr_tickets = f.readline().strip() == "True"
         kill_cs2_tickets = f.readline().strip() == "True"
+        kill_unverified_tickets = f.readline().strip() == "True"
 except FileNotFoundError:
     with open("last_state.txt", "w") as f:
-        f.write("False\nFalse\nFalse")
+        f.write("False\nFalse\nFalse\nFalse")
 
-print(kill_gta_tickets, kill_rdr_tickets, kill_cs2_tickets)
+print(kill_gta_tickets, kill_rdr_tickets, kill_cs2_tickets, kill_unverified_tickets)
 
 @bot.event
 async def on_message(message):
@@ -65,6 +67,7 @@ async def on_message(message):
     global kill_gta_tickets
     global kill_rdr_tickets
     global kill_cs2_tickets
+    global kill_unverified_tickets
 
     if message.author.id == ticket_bot_id and kill_gta_tickets and '//' in message.content:
         if 'gta' in message.content.split('//')[1].split('//')[0].lower():
@@ -119,7 +122,23 @@ async def on_message(message):
             return
     message.content.split('//')
     if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' in message.content.split('//')[1].lower():
-        if 'ye' not in message.content.split('//')[2].lower():
+        if kill_unverified_tickets:
+            print("found unverified password reset ticket")
+            await message.channel.send('Hello! the unverified password reset category has been disabled!')
+            await message.channel.send('this ticket will be closed in 5 seconds')
+            await asyncio.sleep(1)
+            for i in range(4):
+                await message.channel.send(str(4-i))
+                await asyncio.sleep(1)
+            await message.channel.send('0 - goodbye!')
+            await asyncio.sleep(1)
+            await message.channel.send('$close BOT: UNVERIFIED PASSWORD RESET CATEGORY DISABLED')
+            await asyncio.sleep(0.5)
+            await message.channel.send('$transcript')
+            await asyncio.sleep(0.5)
+            await message.channel.send('$delete')
+            return
+        elif 'ye' not in message.content.split('//')[2].lower():
             print("found invalid unverified password reset ticket")
             await message.channel.send('Hello! these tickets are only for requesting a password reset for your account!')
             await message.channel.send('this ticket will be closed in 5 seconds')
@@ -135,6 +154,7 @@ async def on_message(message):
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
             return
+        
     if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' not in message.content.split('//')[1].lower():
         # the opening reason is in the embed field called "Why are you creating this ticket?"
         opening_reason = message.embeds[1].description.split('\n')[1].replace('`', '')
@@ -187,6 +207,18 @@ async def slash_command(interaction: discord.Interaction):
         await interaction.response.send_message("Updated cs2 killing - " + str(kill_cs2_tickets))
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+        
+@bot.tree.command(name="toggle-unverified-killing",description="toggle whether to kill unverified tickets")
+async def slash_command(interaction: discord.Interaction):
+    role = discord.utils.get(interaction.guild.roles, id=moderator_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        global kill_unverified_tickets
+        kill_unverified_tickets = not kill_unverified_tickets
+        update_status()
+        print("Updated unverified killing - " + str(kill_unverified_tickets))
+        await interaction.response.send_message("Updated unverified killing - " + str(kill_unverified_tickets))
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
 @bot.tree.command(name="killing-status",description="get the status of the ticket killing")
 async def slash_command(interaction: discord.Interaction):
@@ -195,7 +227,8 @@ async def slash_command(interaction: discord.Interaction):
         await interaction.response.send_message(":green_circle: = killing enabled, :red_circle: = killing disabled"
                                                 "\nGTA: " + (":green_circle:" if kill_gta_tickets else ":red_circle:") +
                                                 "\nRDR: " + (":green_circle:" if kill_rdr_tickets else ":red_circle:") +
-                                                "\nCS2: " + (":green_circle:" if kill_cs2_tickets else ":red_circle:"))
+                                                "\nCS2: " + (":green_circle:" if kill_cs2_tickets else ":red_circle:") +
+                                                "\nUnverified: " + (":green_circle:" if kill_unverified_tickets else ":red_circle:"))
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
@@ -465,8 +498,9 @@ def update_status():
     global kill_gta_tickets
     global kill_rdr_tickets
     global kill_cs2_tickets
+    global kill_unverified_tickets
     with open("last_state.txt", "w") as f:
-        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets))
+        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets) + "\n" + str(kill_unverified_tickets))
 
 
 bot.run(DISCORD_TOKEN)
