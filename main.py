@@ -1,3 +1,5 @@
+from copyreg import constructor
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -5,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import asyncio
 import aiohttp
+import enum
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("TOKEN")
@@ -41,6 +44,8 @@ unverified_role_id = int(os.getenv("UNVERIFIED_ROLE_ID"))
 print("unverified role id: " + str(unverified_role_id))
 verification_channel_id = int(os.getenv("VERIFICATION_CHANNEL_ID"))
 print("verification channel id: " + str(verification_channel_id))
+last_status_message_channel_id = int(os.getenv("LAST_STATUS_MESSAGE_CHANNEL_ID"))
+print("last status message channel id: " + str(last_status_message_channel_id))
 
 
 kill_gta_tickets = False
@@ -48,17 +53,100 @@ kill_rdr_tickets = False
 kill_cs2_tickets = False
 kill_unverified_tickets = False
 
+# 0 = down, 1 = up, 2 = updating
+status_api = 1
+status_rdr2 = 1
+status_gta = 1
+status_cs2 = 1
+DOWN_EMOJI = ":red_circle:"
+UP_EMOJI = ":green_circle:"
+UPDATING_EMOJI = ":yellow_circle:"
+last_status_message = None
+last_status_message_id = 000000000
+
+async def update_last_state():
+    global last_status_message
+    global kill_gta_tickets
+    global kill_rdr_tickets
+    global kill_cs2_tickets
+    global kill_unverified_tickets
+    global status_api
+    global status_rdr2
+    global status_gta
+    global status_cs2
+    with open("last_state.txt", "w") as f:
+        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets) + "\n" + str(kill_unverified_tickets) + "\n")
+        f.write("----------------\n")
+        f.write(str(status_api) + "\n" + str(status_rdr2) + "\n" + str(status_gta) + "\n" + str(status_cs2) + "\n")
+        f.write(str(last_status_message.id) + "\n")
+
 try:
     with open("last_state.txt", "r") as f:
         kill_gta_tickets = f.readline().strip() == "True"
         kill_rdr_tickets = f.readline().strip() == "True"
         kill_cs2_tickets = f.readline().strip() == "True"
         kill_unverified_tickets = f.readline().strip() == "True"
+        f.readline()
+        status_api = int(f.readline().strip())
+        status_rdr2 = int(f.readline().strip())
+        status_gta = int(f.readline().strip())
+        status_cs2 = int(f.readline().strip())
+        last_status_message_id = f.readline().strip()
 except FileNotFoundError:
+    print("last_state.txt not found, using defaults")
     with open("last_state.txt", "w") as f:
-        f.write("False\nFalse\nFalse\nFalse")
+        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets) + "\n" + str(kill_unverified_tickets) + "\n")
+        f.write("----------------\n")
+        f.write(str(status_api) + "\n" + str(status_rdr2) + "\n" + str(status_gta) + "\n" + str(status_cs2) + "\n")
+        f.write(str(last_status_message_id) + "\n")
 
 print(kill_gta_tickets, kill_rdr_tickets, kill_cs2_tickets, kill_unverified_tickets)
+print(status_api, status_rdr2, status_gta, status_cs2)
+print(last_status_message_id)
+
+
+async def update_status_message():
+    global last_status_message
+    global last_status_message_id
+    global last_status_message_channel_id
+    global status_api
+    global status_rdr2
+    global status_gta
+    global status_cs2
+    # build the embed
+    embed1_description = f"**{UP_EMOJI} | Online**\n**{UPDATING_EMOJI} | Updating**\n**{DOWN_EMOJI} | Offline**"
+    embed1 = discord.Embed(title="Status Guide", color=discord.Color.dark_gray(), description=embed1_description)
+    embed2_api_line = f"API: {UP_EMOJI if status_api == 1 else DOWN_EMOJI if status_api == 0 else UPDATING_EMOJI}"
+    embed2_rdr2_line = f"Read Dead Redemption 2: {UP_EMOJI if status_rdr2 == 1 else DOWN_EMOJI if status_rdr2 == 0 else UPDATING_EMOJI}"
+    embed2_gta_line = f"Grand Theft Auto 5: {UP_EMOJI if status_gta == 1 else DOWN_EMOJI if status_gta == 0 else UPDATING_EMOJI}"
+    embed2_cs2_line = f"Counter-Strike 2: {UP_EMOJI if status_cs2 == 1 else DOWN_EMOJI if status_cs2 == 0 else UPDATING_EMOJI}"
+    embed2_description = f"{embed2_api_line}\n{embed2_rdr2_line}\n{embed2_gta_line}\n{embed2_cs2_line}"
+    embed2 = discord.Embed(title="Product Status", color=discord.Color.dark_gray(), description=embed2_description)
+    embed3_description_gtakill = f"Grand Theft Auto 5 Tickets: {UP_EMOJI if not kill_gta_tickets else DOWN_EMOJI}"
+    embed3_description_rdrkill = f"Red Dead Redemption 2 Tickets: {UP_EMOJI if not kill_rdr_tickets else DOWN_EMOJI}"
+    embed3_description_cs2kill = f"Counter-Strike 2 Tickets: {UP_EMOJI if not kill_cs2_tickets else DOWN_EMOJI}"
+    embed3_description_unverifiedkill = f"Unverified Password Reset Tickets: {UP_EMOJI if not kill_unverified_tickets else DOWN_EMOJI}"
+    embed3_description = f"{embed3_description_gtakill}\n{embed3_description_rdrkill}\n{embed3_description_cs2kill}\n{embed3_description_unverifiedkill}"
+    embed3 = discord.Embed(title="Ticket Status", color=discord.Color.dark_gray(), description=embed3_description)
+    # send the message
+    if last_status_message_id != 000000000 and last_status_message_channel_id is not None:
+        channel = bot.get_channel(int(last_status_message_channel_id))
+        if channel is not None:
+            try:
+                last_status_message = await channel.fetch_message(int(last_status_message_id))
+            except discord.errors.NotFound:
+                print("last status message not found")
+                last_status_message = None
+    if last_status_message is not None:
+        await asyncio.create_task(last_status_message.edit(embeds=[embed1, embed2, embed3]))
+    else:
+        print("last status message is None")
+        channel = bot.get_channel(int(last_status_message_channel_id))
+        if channel is not None:
+            last_status_message = await channel.send(embeds=[embed1, embed2, embed3])
+            last_status_message_id = last_status_message.id
+            last_status_message_channel_id = last_status_message.channel.id
+            await update_last_state()
 
 @bot.event
 async def on_message(message):
@@ -178,7 +266,8 @@ async def slash_command(interaction: discord.Interaction):
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
         global kill_gta_tickets
         kill_gta_tickets = not kill_gta_tickets
-        update_status()
+        await update_last_state()
+        await update_status_message()
         print("Updated gta killing - " + str(kill_gta_tickets))
         await interaction.response.send_message("Updated gta killing - " + str(kill_gta_tickets))
     else:
@@ -190,7 +279,8 @@ async def slash_command(interaction: discord.Interaction):
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
         global kill_rdr_tickets
         kill_rdr_tickets = not kill_rdr_tickets
-        update_status()
+        await update_last_state()
+        await update_status_message()
         print("Updated rdr killing - " + str(kill_rdr_tickets))
         await interaction.response.send_message("Updated rdr killing - " + str(kill_rdr_tickets))
     else:
@@ -202,7 +292,8 @@ async def slash_command(interaction: discord.Interaction):
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
         global kill_cs2_tickets
         kill_cs2_tickets = not kill_cs2_tickets
-        update_status()
+        await update_last_state()
+        await update_status_message()
         print("Updated cs2 killing - " + str(kill_cs2_tickets))
         await interaction.response.send_message("Updated cs2 killing - " + str(kill_cs2_tickets))
     else:
@@ -214,7 +305,8 @@ async def slash_command(interaction: discord.Interaction):
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
         global kill_unverified_tickets
         kill_unverified_tickets = not kill_unverified_tickets
-        update_status()
+        await update_last_state()
+        await update_status_message()
         print("Updated unverified killing - " + str(kill_unverified_tickets))
         await interaction.response.send_message("Updated unverified killing - " + str(kill_unverified_tickets))
     else:
@@ -488,19 +580,80 @@ async def slash_command(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
+
+class Status(enum.IntEnum):
+    UP = 1
+    DOWN = 0
+    UPDATING = 2
+@bot.tree.command(name="set-status-api", description="Set the status of the API")
+@app_commands.describe(status="0 = down, 1 = up, 2 = updating")
+async def slash_command(interaction: discord.Interaction, status: Status):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        global status_api
+        status_api = status
+        await update_status_message()
+        await update_last_state()
+        await interaction.response.send_message("Updated the API status")
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
+@bot.tree.command(name="set-status-rdr2", description="Set the status of Red Dead Redemption 2")
+@app_commands.describe(status="0 = down, 1 = up, 2 = updating")
+async def slash_command(interaction: discord.Interaction, status: Status):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        global status_rdr2
+        status_rdr2 = status
+        await update_status_message()
+        await update_last_state()
+        await interaction.response.send_message("Updated the Red Dead Redemption 2 status")
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
+@bot.tree.command(name="set-status-gta", description="Set the status of Grand Theft Auto 5")
+@app_commands.describe(status="0 = down, 1 = up, 2 = updating")
+async def slash_command(interaction: discord.Interaction, status: Status):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        global status_gta
+        status_gta = status
+        await update_status_message()
+        await update_last_state()
+        await interaction.response.send_message("Updated the Grand Theft Auto 5 status")
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
+@bot.tree.command(name="set-status-cs2", description="Set the status of Counter-Strike 2")
+@app_commands.describe(status="0 = down, 1 = up, 2 = updating")
+async def slash_command(interaction: discord.Interaction, status: Status):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        global status_cs2
+        status_cs2 = status
+        await update_status_message()
+        await update_last_state()
+        await interaction.response.send_message("Updated the Counter-Strike 2 status")
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
+@bot.tree.command(name="get-status", description="Get the status of the products")
+async def slash_command(interaction: discord.Interaction):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message(":green_circle: = online, :red_circle: = offline, :yellow_circle: = updating"
+                                                "\nAPI: " + (":green_circle:" if status_api == 1 else ":red_circle:" if status_api == 0 else ":yellow_circle:") +
+                                                "\nRed Dead Redemption 2: " + (":green_circle:" if status_rdr2 == 1 else ":red_circle:" if status_rdr2 == 0 else ":yellow_circle:") +
+                                                "\nGrand Theft Auto 5: " + (":green_circle:" if status_gta == 1 else ":red_circle:" if status_gta == 0 else ":yellow_circle:") +
+                                                "\nCounter-Strike 2: " + (":green_circle:" if status_cs2 == 1 else ":red_circle:" if status_cs2 == 0 else ":yellow_circle:"))
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
     print(f'We have logged in as {bot.user}')
-
-
-def update_status():
-    global kill_gta_tickets
-    global kill_rdr_tickets
-    global kill_cs2_tickets
-    global kill_unverified_tickets
-    with open("last_state.txt", "w") as f:
-        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets) + "\n" + str(kill_unverified_tickets))
+    await update_status_message()
 
 
 bot.run(DISCORD_TOKEN)
