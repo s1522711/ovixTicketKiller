@@ -260,6 +260,7 @@ async def on_message(message):
                                    f'\nType: unverified, reason: {opening_reason}'
                                    '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
 
+"""
 @bot.tree.command(name="toggle-gta-killing",description="toggle whether to kill gta tickets")
 async def slash_command(interaction: discord.Interaction):
     role = discord.utils.get(interaction.guild.roles, id=moderator_role_id)
@@ -309,6 +310,43 @@ async def slash_command(interaction: discord.Interaction):
         await update_status_message()
         print("Updated unverified killing - " + str(kill_unverified_tickets))
         await interaction.response.send_message("Updated unverified killing - " + str(kill_unverified_tickets))
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+"""
+
+
+class KillingOptions(enum.IntEnum):
+    KILL = 1
+    UNKILL = 0
+
+
+class KillingTicketOptions(enum.Enum):
+    GTA = 1
+    RDR = 2
+    CS2 = 3
+    UNVERIFIED = 4
+
+@bot.tree.command(name="set-killing",description="set the killing status of a ticket category")
+@app_commands.describe(option="1 = kill, 0 = unkill", ticket_option="1 = GTA, 2 = RDR, 3 = CS2, 4 = unverified")
+async def slash_command(interaction: discord.Interaction, option: KillingOptions, ticket_option: KillingTicketOptions):
+    role = discord.utils.get(interaction.guild.roles, id=moderator_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        global kill_gta_tickets
+        global kill_rdr_tickets
+        global kill_cs2_tickets
+        global kill_unverified_tickets
+        if ticket_option == KillingTicketOptions.GTA:
+            kill_gta_tickets = option == KillingOptions.KILL
+        elif ticket_option == KillingTicketOptions.RDR:
+            kill_rdr_tickets = option == KillingOptions.KILL
+        elif ticket_option == KillingTicketOptions.CS2:
+            kill_cs2_tickets = option == KillingOptions.KILL
+        elif ticket_option == KillingTicketOptions.UNVERIFIED:
+            kill_unverified_tickets = option == KillingOptions.KILL
+        await update_last_state()
+        await update_status_message()
+        print(f"Updated killing of {ticket_option.name} to {option.name}")
+        await interaction.response.send_message(f"Updated killing of {ticket_option.name} to {option.name}")
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
@@ -585,6 +623,7 @@ class Status(enum.IntEnum):
     UP = 1
     DOWN = 0
     UPDATING = 2
+"""
 @bot.tree.command(name="set-status-api", description="Set the status of the API")
 @app_commands.describe(status="0 = down, 1 = up, 2 = updating")
 async def slash_command(interaction: discord.Interaction, status: Status):
@@ -634,6 +673,37 @@ async def slash_command(interaction: discord.Interaction, status: Status):
         await update_status_message()
         await update_last_state()
         await interaction.response.send_message("Updated the Counter-Strike 2 status")
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+"""
+
+
+class StatusOptions(enum.Enum):
+    API = 1
+    RDR2 = 2
+    GTA = 3
+    CS2 = 4
+
+@bot.tree.command(name="set-product-status", description="Set the status of the products")
+@app_commands.describe(status="0 = down, 1 = up, 2 = updating", product="API = 1, Red Dead Redemption 2 = 2, Grand Theft Auto 5 = 3, Counter-Strike 2 = 4")
+async def slash_command(interaction: discord.Interaction, status: Status, product: StatusOptions):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        if product == StatusOptions.API:
+            global status_api
+            status_api = status
+        elif product == StatusOptions.RDR2:
+            global status_rdr2
+            status_rdr2 = status
+        elif product == StatusOptions.GTA:
+            global status_gta
+            status_gta = status
+        elif product == StatusOptions.CS2:
+            global status_cs2
+            status_cs2 = status
+        await update_status_message()
+        await update_last_state()
+        await interaction.response.send_message("Updated the product status")
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
