@@ -689,6 +689,7 @@ class StatusOptions(enum.Enum):
 async def slash_command(interaction: discord.Interaction, status: Status, product: StatusOptions):
     role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
+        status = int(status)
         if product == StatusOptions.API:
             global status_api
             status_api = status
