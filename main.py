@@ -726,6 +726,7 @@ async def slash_command(interaction: discord.Interaction):
     if role in interaction.user.roles:
         closer = interaction.user
         await interaction.response.send_message('closing ticket in 5 seconds', ephemeral=True)
+        print(f'closing ticket in 5 seconds by {closer} in {interaction.channel} in {interaction.channel.category}')
         await interaction.channel.send('Hello! this ticket will be closed in 5 seconds')
         await asyncio.sleep(1)
         for i in range(4):
