@@ -720,6 +720,27 @@ async def slash_command(interaction: discord.Interaction):
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
+@bot.tree.command(name="close-ticket", description="Close a ticket (staff only)")
+async def slash_command(interaction: discord.Interaction):
+    role = discord.utils.get(interaction.guild.roles, id=staff_role_id)
+    if role in interaction.user.roles:
+        closer = interaction.user
+        await interaction.response.send_message('closing ticket in 5 seconds', ephemeral=True)
+        await interaction.channel.send('Hello! this ticket will be closed in 5 seconds')
+        await asyncio.sleep(1)
+        for i in range(4):
+            await interaction.channel.send(str(4-i))
+            await asyncio.sleep(1)
+        await interaction.channel.send('0 - goodbye!')
+        await asyncio.sleep(1)
+        await interaction.channel.send(f'$close Bot autoclose - {closer.mention}')
+        await asyncio.sleep(0.5)
+        await interaction.channel.send('$transcript')
+        await asyncio.sleep(0.5)
+        await interaction.channel.send('$delete')
+    else:
+        await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
+
 @bot.event
 async def on_ready():
     await bot.tree.sync()
