@@ -48,7 +48,7 @@ last_status_message_channel_id = int(os.getenv("LAST_STATUS_MESSAGE_CHANNEL_ID")
 print("last status message channel id: " + str(last_status_message_channel_id))
 retard_channel_id = int(os.getenv("RETARD_CHANNEL_ID"))
 print("retard_channel_id:", retard_channel_id)
-ticket_category_ids = os.getenv("TICKET_CATEGORY_IDS").split(",")
+ticket_category_ids = os.getenv("TICKET_CATEGORY_IDS").replace(" ", "").split(",")
 ticket_category_ids = [eval(i) for i in ticket_category_ids]
 print("ticket_category_id's:", ticket_category_ids)
 
