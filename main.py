@@ -46,6 +46,11 @@ verification_channel_id = int(os.getenv("VERIFICATION_CHANNEL_ID"))
 print("verification channel id: " + str(verification_channel_id))
 last_status_message_channel_id = int(os.getenv("LAST_STATUS_MESSAGE_CHANNEL_ID"))
 print("last status message channel id: " + str(last_status_message_channel_id))
+retard_channel_id = int(os.getenv("RETARD_CHANNEL_ID"))
+print("retard_channel_id:", retard_channel_id)
+ticket_category_ids = os.getenv("TICKET_CATEGORY_IDS").split(",")
+ticket_category_ids = [eval(i) for i in ticket_category_ids]
+print("ticket_category_id's:", ticket_category_ids)
 
 
 kill_gta_tickets = False
@@ -150,8 +155,6 @@ async def update_status_message():
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
-        return
     global kill_gta_tickets
     global kill_rdr_tickets
     global kill_cs2_tickets
@@ -242,7 +245,36 @@ async def on_message(message):
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
             return
-        
+    # check if the message is in one of the ticket channel categories
+    if message.channel.category_id in ticket_category_ids:
+        message_author = message.author
+        if message_author is not None:
+            if message_author.bot:
+                return
+            if message_author.guild_permissions.administrator:
+                return
+            role = discord.utils.get(message.guild.roles, id=staff_role_id)
+            if role in message_author.roles:
+                return
+            role = discord.utils.get(message.guild.roles, id=trial_staff_role_id)
+            if role in message_author.roles:
+                return
+            if not message.mentions:
+                return
+            # if there are mentions in the message, send a warning to the retard channel
+            retard_channel = bot.get_channel(retard_channel_id)
+            await retard_channel.send(f"{message_author.mention} has pinged someone in <#{message.channel.id}>")
+            # warn the user
+            await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
+            await asyncio.sleep(1)
+            await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
+            await asyncio.sleep(1)
+            await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
+            await asyncio.sleep(1)
+            await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
+            await asyncio.sleep(1)
+            await message.channel.send("hope you understand :)")
+
     if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' not in message.content.split('//')[1].lower():
         # the opening reason is in the embed field called "Why are you creating this ticket?"
         opening_reason = message.embeds[1].description.split('\n')[1].replace('`', '')
