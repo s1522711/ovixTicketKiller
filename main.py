@@ -264,35 +264,39 @@ async def on_message(message):
                                    '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
 
     # check if the message is in one of the ticket channel categories
-    if message.channel.category_id in ticket_category_ids:
-        message_author = message.author
-        if message_author is not None:
-            if message_author.bot:
-                return
-            if message_author.guild_permissions.administrator:
-                return
-            role = discord.utils.get(message.guild.roles, id=staff_role_id)
-            if role in message_author.roles:
-                return
-            role = discord.utils.get(message.guild.roles, id=trial_staff_role_id)
-            if role in message_author.roles:
-                return
-            if not message.mentions:
-                return
-            # if there are mentions in the message, send a warning to the retard channel
-            print(f"ping detected in channel id: {message.channel.id} by user id: {message_author.mention}")
-            retard_channel = bot.get_channel(retard_channel_id)
-            await retard_channel.send(f"{message_author.mention} has pinged someone in <#{message.channel.id}>")
-            # warn the user
-            await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
-            await asyncio.sleep(1)
-            await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
-            await asyncio.sleep(1)
-            await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
-            await asyncio.sleep(1)
-            await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
-            await asyncio.sleep(1)
-            await message.channel.send("hope you understand :)")
+    try:
+        if message.channel.category_id in ticket_category_ids:
+            message_author = message.author
+            if message_author is not None:
+                if message_author.bot:
+                    return
+                if message_author.guild_permissions.administrator:
+                    return
+                role = discord.utils.get(message.guild.roles, id=staff_role_id)
+                if role in message_author.roles:
+                    return
+                role = discord.utils.get(message.guild.roles, id=trial_staff_role_id)
+                if role in message_author.roles:
+                    return
+                if not message.mentions:
+                    return
+                # if there are mentions in the message, send a warning to the retard channel
+                print(f"ping detected in channel id: {message.channel.id} by user id: {message_author.mention}")
+                retard_channel = bot.get_channel(retard_channel_id)
+                await retard_channel.send(f"{message_author.mention} has pinged someone in <#{message.channel.id}>")
+                # warn the user
+                await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
+                await asyncio.sleep(1)
+                await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
+                await asyncio.sleep(1)
+                await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
+                await asyncio.sleep(1)
+                await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
+                await asyncio.sleep(1)
+                await message.channel.send("hope you understand :)")
+    except AttributeError:
+        print("Someone ran a command i guess")
+        pass
 
 """
 @bot.tree.command(name="toggle-gta-killing",description="toggle whether to kill gta tickets")
