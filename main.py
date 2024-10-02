@@ -262,6 +262,7 @@ async def on_message(message):
             if not message.mentions:
                 return
             # if there are mentions in the message, send a warning to the retard channel
+            print(f"ping detected in channel id: {message.channel.id} by user id: {message_author.mention}")
             retard_channel = bot.get_channel(retard_channel_id)
             await retard_channel.send(f"{message_author.mention} has pinged someone in <#{message.channel.id}>")
             # warn the user
