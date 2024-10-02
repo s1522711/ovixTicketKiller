@@ -295,7 +295,6 @@ async def on_message(message):
                 await asyncio.sleep(1)
                 await message.channel.send("hope you understand :)")
     except AttributeError:
-        print("Someone ran a command i guess")
         pass
 
 """
