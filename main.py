@@ -280,6 +280,8 @@ async def on_message(message):
                     return
                 if not message.mentions:
                     return
+                if message.reference: # if the message is a reply
+                    return
                 # if there are mentions in the message, send a warning to the retard channel
                 print(f"ping detected in channel id: {message.channel.id} by user id: {message_author.mention}")
                 retard_channel = bot.get_channel(retard_channel_id)
