@@ -289,6 +289,7 @@ async def on_message(message):
                 # warn the user
                 for x in range(5):
                     await message.channel.send(f"Please dont ping staff! {message_author.mention}")
+                    await asyncio.sleep(1)
                 await message.channel.send("hope you understand :)")
     except AttributeError:
         pass
