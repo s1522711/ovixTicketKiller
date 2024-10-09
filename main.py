@@ -287,14 +287,8 @@ async def on_message(message):
                 retard_channel = bot.get_channel(retard_channel_id)
                 await retard_channel.send(f"{message_author.mention} has pinged someone in <#{message.channel.id}>")
                 # warn the user
-                await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
-                await asyncio.sleep(1)
-                await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
-                await asyncio.sleep(1)
-                await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
-                await asyncio.sleep(1)
-                await message.channel.send(f"# DUMBASS DETECTED, MITIGATING: {message_author.mention}, DO NOT PING STAFF OR YOU WILL BE MUTED!")
-                await asyncio.sleep(1)
+                for x in range(5):
+                    await message.channel.send(f"Please dont ping staff! {message_author.mention}")
                 await message.channel.send("hope you understand :)")
     except AttributeError:
         pass
