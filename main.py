@@ -265,12 +265,15 @@ async def on_message(message):
             await asyncio.sleep(0.5)
             await message.channel.send('$delete')
             return
-        print(f"ticket opened with the reason: Giveaway Claim and Understood status: {understood_category}")
-        await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
-                                   f'\nType: Giveaway Claim, Understood? {understood_category}'
-                                   '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
 
-    if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' not in message.content.split('//')[1].lower():
+    if message.author.id == ticket_bot_id and '//' in message.content and 'gvwy' in message.content.split('//')[1].lower():
+        understood_category = message.embeds[1].description.split('\n')[1].replace('`', '')
+        print(f"ticket opened with the reason: Giveaway claim and Understood status: {understood_category}")
+        await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
+                                      f'\nType: Giveaway claim, understood? {understood_category}'
+                                      '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
+
+    if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' not in message.content.split('//')[1].lower() and 'gvwy' not in message.content.split('//')[1].lower():
         # the opening reason is in the embed field called "Why are you creating this ticket?"
         opening_reason = message.embeds[1].description.split('\n')[1].replace('`', '')
         read_status = message.embeds[1].description.split('\n')[7].replace('`', '')
