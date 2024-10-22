@@ -246,6 +246,30 @@ async def on_message(message):
             await message.channel.send('$delete')
             return
 
+    if message.author.id == ticket_bot_id and '//' in message.content and 'gvwy' in message.content.split('//')[1].lower():
+        # the opening reason is in the embed field called "Why are you creating this ticket?"
+        understood_category = message.embeds[1].description.split('\n')[1].replace('`', '')
+        if 'ye' not in understood_category.lower():
+            print("found invalid giveaway claim ticket")
+            await message.channel.send('Hello! these tickets are only for claiming giveaways that you have won!')
+            await message.channel.send('this ticket will be closed in 5 seconds')
+            await asyncio.sleep(1)
+            for i in range(4):
+                await message.channel.send(str(4-i))
+                await asyncio.sleep(1)
+            await message.channel.send('0 - goodbye!')
+            await asyncio.sleep(1)
+            await message.channel.send('$close BOT: GIVEAWAY CLAIM IDIOT')
+            await asyncio.sleep(0.5)
+            await message.channel.send('$transcript')
+            await asyncio.sleep(0.5)
+            await message.channel.send('$delete')
+            return
+        print(f"ticket opened with the reason: Giveaway Claim and Understood status: {understood_category}")
+        await message.channel.send('||<@&' + str(staff_role_id) + '> <@&' + str(trial_staff_role_id) + '>||'
+                                   f'\nType: Giveaway Claim, Understood? {understood_category}'
+                                   '\nPlease do not ping staff, we will get to your ticket as soon as possible.')
+
     if message.author.id == ticket_bot_id and '//' in message.content and 'pswrd' not in message.content.split('//')[1].lower():
         # the opening reason is in the embed field called "Why are you creating this ticket?"
         opening_reason = message.embeds[1].description.split('\n')[1].replace('`', '')
