@@ -108,7 +108,7 @@ except FileNotFoundError:
         f.write(str(status_api) + "\n" + str(status_rdr2) + "\n" + str(status_gta) + "\n" + str(status_cs2) + "\n")
         f.write(str(last_status_message_id) + "\n")
 
-print(kill_gta_tickets, kill_rdr_tickets, kill_cs2_tickets, kill_unverified_tickets)
+print(kill_gta_tickets, kill_rdr_tickets, kill_cs2_tickets, kill_unverified_tickets, kill_giveaway_tickets)
 print(status_api, status_rdr2, status_gta, status_cs2)
 print(last_status_message_id)
 
