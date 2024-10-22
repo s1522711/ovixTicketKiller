@@ -57,6 +57,7 @@ kill_gta_tickets = False
 kill_rdr_tickets = False
 kill_cs2_tickets = False
 kill_unverified_tickets = False
+kill_giveaway_tickets = True
 
 # 0 = down, 1 = up, 2 = updating
 status_api = 1
@@ -75,12 +76,13 @@ async def update_last_state():
     global kill_rdr_tickets
     global kill_cs2_tickets
     global kill_unverified_tickets
+    global kill_giveaway_tickets
     global status_api
     global status_rdr2
     global status_gta
     global status_cs2
     with open("last_state.txt", "w") as f:
-        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets) + "\n" + str(kill_unverified_tickets) + "\n")
+        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets) + "\n" + str(kill_unverified_tickets) + "\n" + str(kill_giveaway_tickets) + "\n")
         f.write("----------------\n")
         f.write(str(status_api) + "\n" + str(status_rdr2) + "\n" + str(status_gta) + "\n" + str(status_cs2) + "\n")
         f.write(str(last_status_message.id) + "\n")
@@ -91,6 +93,7 @@ try:
         kill_rdr_tickets = f.readline().strip() == "True"
         kill_cs2_tickets = f.readline().strip() == "True"
         kill_unverified_tickets = f.readline().strip() == "True"
+        kill_giveaway_tickets = f.readline().strip() == "True"
         f.readline()
         status_api = int(f.readline().strip())
         status_rdr2 = int(f.readline().strip())
@@ -100,7 +103,7 @@ try:
 except FileNotFoundError:
     print("last_state.txt not found, using defaults")
     with open("last_state.txt", "w") as f:
-        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets) + "\n" + str(kill_unverified_tickets) + "\n")
+        f.write(str(kill_gta_tickets) + "\n" + str(kill_rdr_tickets) + "\n" + str(kill_cs2_tickets) + "\n" + str(kill_unverified_tickets) + "\n" + str(kill_giveaway_tickets) + "\n")
         f.write("----------------\n")
         f.write(str(status_api) + "\n" + str(status_rdr2) + "\n" + str(status_gta) + "\n" + str(status_cs2) + "\n")
         f.write(str(last_status_message_id) + "\n")
@@ -131,7 +134,8 @@ async def update_status_message():
     embed3_description_rdrkill = f"Red Dead Redemption 2 Tickets: {UP_EMOJI if not kill_rdr_tickets else DOWN_EMOJI}"
     embed3_description_cs2kill = f"Counter-Strike 2 Tickets: {UP_EMOJI if not kill_cs2_tickets else DOWN_EMOJI}"
     embed3_description_unverifiedkill = f"Unverified Password Reset Tickets: {UP_EMOJI if not kill_unverified_tickets else DOWN_EMOJI}"
-    embed3_description = f"{embed3_description_gtakill}\n{embed3_description_rdrkill}\n{embed3_description_cs2kill}\n{embed3_description_unverifiedkill}"
+    embed3_description_giveawaykill = f"Giveaway Claim Tickets: {UP_EMOJI if not kill_giveaway_tickets else DOWN_EMOJI}"
+    embed3_description = f"{embed3_description_gtakill}\n{embed3_description_rdrkill}\n{embed3_description_cs2kill}\n{embed3_description_unverifiedkill}\n{embed3_description_giveawaykill}"
     embed3 = discord.Embed(title="Ticket Status", color=discord.Color.dark_gray(), description=embed3_description)
     # send the message
     if last_status_message_id != 000000000 and last_status_message_channel_id is not None:
@@ -159,6 +163,7 @@ async def on_message(message):
     global kill_rdr_tickets
     global kill_cs2_tickets
     global kill_unverified_tickets
+    global kill_giveaway_tickets
 
     if message.author.id == ticket_bot_id and kill_gta_tickets and '//' in message.content:
         if 'gta' in message.content.split('//')[1].split('//')[0].lower():
@@ -249,6 +254,22 @@ async def on_message(message):
     if message.author.id == ticket_bot_id and '//' in message.content and 'gvwy' in message.content.split('//')[1].lower():
         # the opening reason is in the embed field called "Why are you creating this ticket?"
         understood_category = message.embeds[1].description.split('\n')[1].replace('`', '')
+        if kill_giveaway_tickets:
+            print("found killable giveaway claim ticket")
+            await message.channel.send('Hello! the giveaway claim category has been disabled!')
+            await message.channel.send('this ticket will be closed in 5 seconds')
+            await asyncio.sleep(1)
+            for i in range(4):
+                await message.channel.send(str(4-i))
+                await asyncio.sleep(1)
+            await message.channel.send('0 - goodbye!')
+            await asyncio.sleep(1)
+            await message.channel.send('$close BOT: GIVEAWAY CLAIM CATEGORY DISABLED')
+            await asyncio.sleep(0.5)
+            await message.channel.send('$transcript')
+            await asyncio.sleep(0.5)
+            await message.channel.send('$delete')
+            return
         if 'ye' not in understood_category.lower():
             print("found invalid giveaway claim ticket")
             await message.channel.send('Hello! these tickets are only for claiming giveaways that you have won!')
@@ -386,9 +407,10 @@ class KillingTicketOptions(enum.Enum):
     RDR = 2
     CS2 = 3
     UNVERIFIED = 4
+    GIVEAWAYS = 5
 
 @bot.tree.command(name="set-killing",description="set the killing status of a ticket category")
-@app_commands.describe(option="1 = kill, 0 = unkill", ticket_option="1 = GTA, 2 = RDR, 3 = CS2, 4 = unverified")
+@app_commands.describe(option="1 = kill, 0 = unkill", ticket_option="1 = GTA, 2 = RDR, 3 = CS2, 4 = unverified, 5 = giveaway claims")
 async def slash_command(interaction: discord.Interaction, option: KillingOptions, ticket_option: KillingTicketOptions):
     role = discord.utils.get(interaction.guild.roles, id=moderator_role_id)
     if role in interaction.user.roles or interaction.user.guild_permissions.administrator:
@@ -396,6 +418,7 @@ async def slash_command(interaction: discord.Interaction, option: KillingOptions
         global kill_rdr_tickets
         global kill_cs2_tickets
         global kill_unverified_tickets
+        global kill_giveaway_tickets
         if ticket_option == KillingTicketOptions.GTA:
             kill_gta_tickets = option == KillingOptions.KILL
         elif ticket_option == KillingTicketOptions.RDR:
@@ -404,6 +427,8 @@ async def slash_command(interaction: discord.Interaction, option: KillingOptions
             kill_cs2_tickets = option == KillingOptions.KILL
         elif ticket_option == KillingTicketOptions.UNVERIFIED:
             kill_unverified_tickets = option == KillingOptions.KILL
+        elif ticket_option == KillingTicketOptions.GIVEAWAYS:
+            kill_giveaway_tickets = option == KillingOptions.KILL
         await update_last_state()
         await update_status_message()
         print(f"Updated killing of {ticket_option.name} to {option.name}")
@@ -419,7 +444,8 @@ async def slash_command(interaction: discord.Interaction):
                                                 "\nGTA: " + (":green_circle:" if kill_gta_tickets else ":red_circle:") +
                                                 "\nRDR: " + (":green_circle:" if kill_rdr_tickets else ":red_circle:") +
                                                 "\nCS2: " + (":green_circle:" if kill_cs2_tickets else ":red_circle:") +
-                                                "\nUnverified: " + (":green_circle:" if kill_unverified_tickets else ":red_circle:"))
+                                                "\nUnverified: " + (":green_circle:" if kill_unverified_tickets else ":red_circle:") +
+                                                "\nGiveaway: " + (":green_circle:" if kill_giveaway_tickets else ":red_circle:"))
     else:
         await interaction.response.send_message("You do not have permission to use this command", ephemeral=True)
 
