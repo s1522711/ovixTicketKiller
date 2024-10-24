@@ -347,10 +347,13 @@ async def on_message(message):
     except AttributeError:
         pass
 
-    if not message.author.bot and not (message.author.guild_permissions.administrator or discord.utils.get(message.guild.roles, id=staff_role_id) not in message.author.roles or discord.utils.get(message.guild.roles, id=trial_staff_role_id) not in message.author.roles) and message.channel.id in autodelete_channel_ids:
+    if not message.author.bot and not (message.author.guild_permissions.administrator or discord.utils.get(message.guild.roles, id=staff_role_id) in message.author.roles or discord.utils.get(message.guild.roles, id=trial_staff_role_id) in message.author.roles) and message.channel.id in autodelete_channel_ids:
         print(f"found deleteable message in {message.channel}, waiting {autodelete_message_delay} seconds")
         await asyncio.sleep(autodelete_message_delay)
-        message.delete()
+        try:
+            await message.delete()
+        except discord.NotFound:
+            print("message deleted before autodelete")
 
 """
 @bot.tree.command(name="toggle-gta-killing",description="toggle whether to kill gta tickets")
