@@ -51,6 +51,11 @@ print("retard_channel_id:", retard_channel_id)
 ticket_category_ids = os.getenv("TICKET_CATEGORY_IDS").replace(" ", "").split(",")
 ticket_category_ids = [eval(i) for i in ticket_category_ids]
 print("ticket_category_id's:", ticket_category_ids)
+autodelete_channel_ids = os.getenv("AUTODELETE_CHANNEL_IDS").replace(" ", "").split(",")
+autodelete_channel_ids = [eval(i) for i in autodelete_channel_ids]
+print("autodelete_channel_id's:", autodelete_channel_ids)
+autodelete_message_delay = int(os.getenv("AUTODELETE_MESSAGE_DELAY"))
+print("autodelete_message_delay:", autodelete_message_delay)
 
 
 kill_gta_tickets = False
@@ -341,6 +346,11 @@ async def on_message(message):
                 await message.channel.send("hope you understand :)")
     except AttributeError:
         pass
+
+    if not message.author.bot and not (message.author.guild_permissions.administrator or discord.utils.get(message.guild.roles, id=staff_role_id) not in message.author.roles or discord.utils.get(message.guild.roles, id=trial_staff_role_id) not in message.author.roles) and message.channel.id in autodelete_channel_ids:
+        print(f"found deleteable message in {message.channel}, waiting {autodelete_message_delay} seconds")
+        await asyncio.sleep(autodelete_message_delay)
+        message.delete()
 
 """
 @bot.tree.command(name="toggle-gta-killing",description="toggle whether to kill gta tickets")
